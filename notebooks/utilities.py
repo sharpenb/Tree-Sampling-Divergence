@@ -1,9 +1,6 @@
 import numpy as np
 import networkx as nx
 import random as rnd
-import matplotlib.pyplot as plt
-import matplotlib._color_data as mcd
-from scipy.cluster.hierarchy import dendrogram
 
 ### Rank score (reconstruction score)
 
@@ -147,43 +144,66 @@ class HSBM:
         print('\nNodes: ', self._nodes)
         print('Next level: ', self.next_level)
         print('Probability matrix: ', self._p_matrix)
+
+### Obtain clustering from dendrogram
+
+def clustering_from_dendrogram(D, n_clusters):
+    n_nodes = np.shape(D)[0] + 1
+    cluster = {i: [i] for i in range(n_nodes)}
+    for t in range(n_clusters):
+        i = int(D[t][0])
+        j = int(D[t][1])
+        cluster[n_nodes + t] = cluster.pop(i) + cluster.pop(j)
+    clusters = [cluster[c] for c in cluster]
+    return clusters        
         
-### Plots graph
+### Load dataset
 
-def plot_graph(G, pos, figsize=(10, 5), node_size=50, alpha =.2, nodes_numbering=False, edges_numbering=False, file_name=""):
-    plt.figure(figsize=figsize)
-    plt.axis('off')
+def load_dataset(directory, dataset_name):
+    try:
+        file = open(directory + dataset_name + "/type.txt", "r")
+        graph_type = file.readline()[0:-1]
+        file.close()
+        if graph_type == "DW":
+            G = nx.read_weighted_edgelist(directory + dataset_name + "/edge.txt", nodetype=int, create_using=nx.DiGraph())
+        elif graph_type == "UW":
+            G = nx.read_weighted_edgelist(directory + dataset_name + "/edge.txt", nodetype=int)
+        elif graph_type == "DU":
+            G = nx.read_edgelist(directory + dataset_name + "/edge.txt", nodetype=int, create_using=nx.DiGraph())
+            for (u, v) in G.edges():
+                G.add_edge(u, v, weight=1.)
+        else:
+            G = nx.read_edgelist(directory + dataset_name + "/edge.txt", nodetype=int)
+        G.name = dataset_name
+        G = G.to_undirected()
+    except:
+        print("\nCannot load graph")
+        G = nx.Graph()
 
-    nodes = nx.draw_networkx_nodes(G, pos, node_size=node_size, node_color='w')
-    nodes.set_edgecolor('k')
-    nx.draw_networkx_edges(G, pos, alpha=alpha)
+    pos = {}
+    try:
+        file = open(directory + dataset_name + "/position.txt", "r")
+        u = 0
+        for line in file:
+            s = line.split()
+            pos[u] = (float(s[0]), float(s[1]))
+            G.add_node(u)
+            u += 1
+        file.close()
+        G.add_nodes_from(pos.keys())
+    except:
+        print("\nCannot load positions")
 
-    if edges_numbering:
-        w = nx.get_edge_attributes(G, 'weight')
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=w)
+    label = {}
+    try:
+        file = open(directory + dataset_name + "/label.txt", "r")
+        u = 0
+        for line in file:
+            label[u] = line[0:-1]
+            G.add_node(u)
+            u += 1
+        file.close()
+    except:
+        print("\nCannot load labels")
 
-    if nodes_numbering:
-        nx.draw_networkx_labels(G, pos)
-
-    if file_name != "":
-        plt.savefig(file_name + ".pdf", bbox_inches='tight')
-        plt.savefig(file_name + ".png", bbox_inches ='tight')
-    else:
-        plt.show()
-plt.close()
-
-### Plots dendrogram
-
-def plot_dendrogram(D, scaling=lambda x:np.log(x), figsize=(10, 5), file_name=""):
-    plt.figure(figsize=figsize)
-    D_scaled = D.copy()
-    D_scaled[:, 2] = scaling((D[:, 2])) - scaling((D[0, 2]))
-    dendrogram(D_scaled, leaf_rotation=90.)
-    plt.axis('off')
-
-    if file_name != "":
-        plt.savefig(file_name + ".pdf", bbox_inches='tight')
-        plt.savefig(file_name + ".png", bbox_inches='tight')
-    else:
-        plt.show()
-plt.close()
+    return G, pos, label
