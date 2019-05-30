@@ -22,8 +22,7 @@ def plot_graph(G, pos, figsize=(10, 5), node_size=50, alpha =.2, nodes_numbering
         nx.draw_networkx_labels(G, pos)
 
     if file_name != "":
-        plt.savefig(file_name + ".pdf", bbox_inches='tight')
-        plt.savefig(file_name + ".png", bbox_inches ='tight')
+        plt.savefig(file_name, bbox_inches='tight')
     else:
         plt.show()
 plt.close()
@@ -45,9 +44,6 @@ def plot_graph_clustering(G, clusters, pos, figsize=(15, 8), node_size=50, alpha
         nodes = nx.draw_networkx_nodes(G, pos, node_size=node_size, nodelist=clusters[l], node_color=colors[l])
         nodes.set_edgecolor('k')
 
-    if title:
-        plt.title("(" + str(len(clusters)) + " clusters)")
-
     if edges_numbering:
         w = nx.get_edge_attributes(G, 'weight')
         nx.draw_networkx_edge_labels(G, pos, edge_labels=w)
@@ -56,8 +52,7 @@ def plot_graph_clustering(G, clusters, pos, figsize=(15, 8), node_size=50, alpha
         nx.draw_networkx_labels(G, pos)
 
     if file_name != "":
-        plt.savefig(file_name + ".pdf", bbox_inches ='tight')
-        plt.savefig(file_name + ".png", bbox_inches ='tight')
+        plt.savefig(file_name, bbox_inches ='tight')
     else:
         plt.show()
     plt.close()
@@ -72,8 +67,7 @@ def plot_dendrogram(D, scaling=lambda x:np.log(x), figsize=(10, 5), file_name=""
     plt.axis('off')
 
     if file_name != "":
-        plt.savefig(file_name + ".pdf", bbox_inches='tight')
-        plt.savefig(file_name + ".png", bbox_inches='tight')
+        plt.savefig(file_name, bbox_inches='tight')
     else:
         plt.show()
 plt.close()
@@ -106,8 +100,7 @@ def plot_dendrogram_clustering(D, clusters, scaling=lambda x: np.log(x), figsize
     plt.axis('off')
 
     if file_name != "":
-        plt.savefig(file_name + ".pdf", bbox_inches='tight')
-        plt.savefig(file_name + ".png", bbox_inches='tight')
+        plt.savefig(file_name, bbox_inches='tight')
     else:
         plt.show()
     plt.close()
