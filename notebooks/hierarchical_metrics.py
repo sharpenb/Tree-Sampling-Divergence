@@ -50,34 +50,30 @@ def euclidean(graph, dendrogram):
 
     return similarity
 
-### Dasgupta Divergence
+### Dasgupta's cost
 
 def dasgupta(graph, dendrogram):
     graph_copy = graph.copy()
     n_nodes = np.shape(dendrogram)[0] + 1
 
-    w = {u: 0 for u in range(n_nodes)}
+    pi = {u: 1/n_nodes for u in range(n_nodes)}
     wtot = 0
-    for (u, v) in graph_copy.edges():
-        weight = graph_copy[u][v]['weight']
-        w[u] += 1
-        w[v] += 1
-        wtot += 2
+    for u,v in graph_copy.edges():
+        wtot += 2 * graph_copy[u][v]['weight']
     
     u = n_nodes
     similarity = 0
     sum_qsig = 0
-    pi = {t: w[t]/float(wtot) for t in range(n_nodes)}
+
     for t in range(n_nodes - 1):
         a = int(dendrogram[t][0])
         b = int(dendrogram[t][1])
         d = dendrogram[t][2]
 
-        w[u] = w.pop(a) + w.pop(b)
-        pi[u] = w[u] / float(wtot)
+        pi_a = pi.pop(a)
+        pi_b = pi.pop(b)
+        pi[u] = pi_a + pi_b
 
-        pi_a = pi[a]
-        pi_b = pi[b]
         if graph_copy.has_edge(a, b):
             p_ab = 2 * graph_copy[a][b]['weight'] / float(wtot)
             similarity += p_ab * (pi_a + pi_b)

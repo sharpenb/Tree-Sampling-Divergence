@@ -156,54 +156,59 @@ def clustering_from_dendrogram(D, n_clusters):
         cluster[n_nodes + t] = cluster.pop(i) + cluster.pop(j)
     clusters = [cluster[c] for c in cluster]
     return clusters        
-        
-### Load dataset
 
-def load_dataset(directory, dataset_name):
-    try:
-        file = open(directory + dataset_name + "/type.txt", "r")
-        graph_type = file.readline()[0:-1]
-        file.close()
-        if graph_type == "DW":
-            G = nx.read_weighted_edgelist(directory + dataset_name + "/edge.txt", nodetype=int, create_using=nx.DiGraph())
-        elif graph_type == "UW":
-            G = nx.read_weighted_edgelist(directory + dataset_name + "/edge.txt", nodetype=int)
-        elif graph_type == "DU":
-            G = nx.read_edgelist(directory + dataset_name + "/edge.txt", nodetype=int, create_using=nx.DiGraph())
-            for (u, v) in G.edges():
-                G.add_edge(u, v, weight=1.)
-        else:
-            G = nx.read_edgelist(directory + dataset_name + "/edge.txt", nodetype=int)
-        G.name = dataset_name
-        G = G.to_undirected()
-    except:
-        print("\nCannot load graph")
-        G = nx.Graph()
+### Random dendrogram
 
-    pos = {}
-    try:
-        file = open(directory + dataset_name + "/position.txt", "r")
-        u = 0
-        for line in file:
-            s = line.split()
-            pos[u] = (float(s[0]), float(s[1]))
-            G.add_node(u)
-            u += 1
-        file.close()
-        G.add_nodes_from(pos.keys())
-    except:
-        print("\nCannot load positions")
+def random_dendrogram(number_nodes = 100):
+    nodes = list(range(number_nodes))
+    dendrogram = []
+    t = 0
+    size = {u: 1 for u in nodes}
+    while (len(nodes)) > 1:
+        u = nodes.pop(np.random.randint(len(nodes)))
+        v = nodes.pop(np.random.randint(len(nodes)))
+        new_node = number_nodes + t
+        t += 1
+        size[new_node] = size.pop(u) + size.pop(v)
+        dendrogram.append([u,v,size[new_node],size[new_node]])
+        nodes.append(new_node)
+    return np.array(dendrogram, float)
 
-    label = {}
-    try:
-        file = open(directory + dataset_name + "/label.txt", "r")
-        u = 0
-        for line in file:
-            label[u] = line[0:-1]
-            G.add_node(u)
-            u += 1
-        file.close()
-    except:
-        print("\nCannot load labels")
+def get_similarity(dendrogram):
+    n = np.shape(dendrogram)[0] + 1
+    sim = np.zeros((n,n),float)
+    cluster = {u:[u] for u in range(n)}
+    for t in range(n - 1):
+        u = int(dendrogram[t][0])
+        v = int(dendrogram[t][1])
+        for i in cluster[u]:
+            for j in cluster[v]:
+                sim[i][j] = 1 / dendrogram[t][2]
+        cluster[n + t] = cluster.pop(u) + cluster.pop(v)
+    return sim
 
-    return G, pos, label
+def generate_hierarchical_graph(dendrogram, average_degree):
+    n = np.shape(dendrogram)[0] + 1
+    similarity = get_similarity(dendrogram)
+    is_connected = False
+    while not is_connected:
+        adjacency = np.random.rand(n,n) < similarity / np.sum(similarity) * n * average_degree / 2
+        adjacency = np.array(adjacency + adjacency.T,int)
+        graph = nx.from_numpy_matrix(adjacency)
+        is_connected = nx.is_connected(graph)
+    return graph
+
+def add_noise(graph, prob):
+    is_connected = False
+    while not is_connected:
+        new_graph = graph.copy()
+        edges = list(graph.edges())
+        indices = np.random.choice(list(range(len(edges))),replace = False, size = int(np.floor(prob * len(edges))))
+        for i in indices:
+            u,v = edges[i]
+            new_graph.remove_edge(u,v)
+            new_edge = np.random.choice(list(new_graph.nodes()), replace = False, size = 2)
+            new_graph.add_edge(new_edge[0],new_edge[1],weight = 1.)
+        is_connected = nx.is_connected(new_graph)
+    return new_graph
+
